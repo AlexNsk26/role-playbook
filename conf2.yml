@@ -1,0 +1,29 @@
+---
+- name: preconfig
+  hosts: demo
+  tasks:
+
+    - name: Create docker nginx image
+      block:
+      - name: copy conf and index file to remote machine
+        ansible.builtin.copy:
+          src: ngnx/
+          dest: ngnx_files
+          mode: 0755
+          force: yes
+
+      - name: Build Nginx image
+        community.docker.docker_container:
+          name: nginx
+          image: nginx
+          state: started 
+          command: 
+          #- cp /home/{{ ansible_user }}/ngnx_files/ngnx.conf /etc/nginx/conf.d/default.conf
+          #- cp /home/{{ ansible_user }}/ngnx_files/index.html /usr/share/nginx/html/index.html
+          ports:
+          - 8081:80
+        register: nginx
+      - debug:
+          var: nginx
+
+      become: true

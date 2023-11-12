@@ -1,0 +1,110 @@
+---
+- name: preconfig
+  hosts: demo
+  tasks:
+    - name: Docker installation
+      block:
+      - name: Add universe
+        apt_repository:
+          repo: "deb http://us.archive.ubuntu.com/ubuntu/ {{ ansible_distribution_release }} universe"
+          state: present
+
+      - name: Install additional packages
+        apt:
+          name:
+            - apt-transport-https
+            - ca-certificates
+            - curl
+            - gnupg
+            - lsb-release
+          update-cache: yes
+          cache_valid_time: 86400
+
+      - name: Create Docker Key folder
+        file:
+          path: /etc/apt/keyrings
+          state: directory
+          mode: 0755
+
+      - name: Add Docker Key
+        apt_key:
+          url: https://download.docker.com/linux/ubuntu/gpg
+          keyring: /etc/apt/keyrings/docker.gpg
+          state: present
+
+      - name: Install stable repositorie
+        apt_repository:
+          repo: "deb [arch=arm64 signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu/ {{ ansible_distribution_release }} stable"
+          update-cache: yes
+          state: present
+          filename: docker
+
+      - name: Install Docker-ce
+        apt:
+          name: docker-ce
+          update-cache: yes
+
+      - name: Docker is install and reboot
+        service:
+          name: docker
+          state: restarted
+          enabled: yes
+      become: true
+
+    - name: Docker-compose installation
+      block:
+      - name: Get latest version docker-compose
+        uri:
+          url: https://api.github.com/repos/docker/compose/releases/latest
+          body_format: json
+        register: page
+
+      - name: Create Docker-compose folder
+        file:
+          path: /usr/local/bin/docker-compose
+          state: directory
+          mode: 0755
+
+      - name: Install docker-compose
+        get_url:
+          url: "https://github.com/docker/compose/releases/download/{{ page.json.tag_name }}/docker-compose-linux-x86_64"
+          dest: /usr/local/bin/docker-compose
+          mode: 0755
+      become: true
+
+    - name: Finished step installation
+      block:
+      - name: Add user in Docker Group
+        user:
+          name: "{{ ansible_user }}"
+          groups: docker
+          append: yes
+
+      - name: Reboot server
+        reboot:
+      become: true
+
+    - name: Create docker nginx image
+      block:
+      - name: copy conf and index file to remote machine
+        ansible.builtin.copy:
+          src: ngnx/
+          dest: ngnx_files
+          mode: 0755
+          force: yes
+
+      - name: Build Nginx image
+        community.docker.docker_container:
+          name: nginx
+          image: nginx
+          state: started 
+          command: 
+          - cp /home/{{ ansible_user }}/ngnx.conf /etc/nginx/conf.d/default.conf
+          - cp /home/{{ ansible_user }}/index.html /usr/share/nginx/html/index.html
+          ports:
+          - 8081:80
+        register: ngnx_image
+
+    #  - debug:
+    #      var: ngnx_image
+      become: true
