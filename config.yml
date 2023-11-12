@@ -99,8 +99,8 @@
           image: nginx
           state: started 
           command: 
-          - cp /home/{{ ansible_user }}/ngnx.conf /etc/nginx/conf.d/default.conf
-          - cp /home/{{ ansible_user }}/index.html /usr/share/nginx/html/index.html
+          - cp /home/{{ ansible_user }}/ngnx_files/ngnx.conf /etc/nginx/conf.d/default.conf
+          - cp /home/{{ ansible_user }}/ngnx_files/index.html /usr/share/nginx/html/index.html
           ports:
           - 8081:80
         register: ngnx_image
