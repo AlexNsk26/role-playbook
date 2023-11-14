@@ -100,8 +100,8 @@
           image: nginx
           state: started
           volumes:
-            - ./ngnx_files/ngnx.conf:/etc/nginx/conf.d/default.conf
-            - ./ngnx_files/index.html:nginx:/usr/share/nginx/html/index.html  
+            - ~/ngnx_files/ngnx.conf:/etc/nginx/conf.d/default.conf
+            - ~/ngnx_files/index.html:/usr/share/nginx/html/index.html  
           ports:
           - 8081:80
 
