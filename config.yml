@@ -4,46 +4,95 @@
   tasks:
     - name: Docker installation
       become: true
+      vars:
+        gather_facts: true
+        ansible_ssh_user: "{{ ansible_user }}"
+        ansible_ssh_common_args: -o StrictHostKeyChecking=no
+        package_names_docker:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          #- docker-compose-plugin
+        dependencies_for_docker:
+          - ca-certificates
+          - curl
+          - gnupg-agent
+        docker_gpg: https://download.docker.com/linux/ubuntu/gpg
+        apt_repository_docker: |
+          deb [arch=amd64] https://download.docker.com/{{ ansible_system | lower }}/{{ ansible_distribution | lower }} {{ ansible_distribution_release }} stable
+        when_not_install: "{{package_names_docker| list }}"
+
       block:
         - name: Add universe
           apt_repository:
             repo: deb http://us.archive.ubuntu.com/ubuntu/ {{ ansible_distribution_release }} universe
             state: present
 
-        - name: Install additional packages
-          apt:
-            name:
-              - apt-transport-https
-              - ca-certificates
-              - curl
-              - gnupg
-              - lsb-release
-            update-cache: true
-            cache_valid_time: 86400
+        - name: Dependencies for docker
+          ansible.builtin.apt:
+            name: "{{ dependencies_for_docker }}"
+            state: present
+            update_cache: true
 
-        - name: Create Docker Key folder
-          file:
-            path: /etc/apt/keyrings
-            state: directory
-            mode: "0755"
-
-        - name: Add Docker Key
+        - name: Add GPG
           apt_key:
-            url: https://download.docker.com/linux/ubuntu/gpg
-            keyring: /etc/apt/keyrings/docker.gpg
+            url: "{{ docker_gpg }}"
             state: present
 
-        - name: Install stable repositorie
+        - name: Add repository docker
           apt_repository:
-            repo: deb [arch=arm64 signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu/ {{ ansible_distribution_release }} stable
-            update-cache: true
+            repo: "{{ apt_repository_docker }}"
             state: present
-            filename: docker
 
-        - name: Install Docker-ce
-          apt:
-            name: docker-ce
-            update-cache: true
+        - name: Install a list of packages
+          ansible.builtin.apt:
+            name: "{{ item }}"
+            state: present
+          loop: "{{ when_not_install }}"
+
+        # - name: Install additional packages
+        #   apt:
+        #     name:
+        #       - apt-transport-https
+        #       - ca-certificates
+        #       - curl
+        #       - gnupg
+        #       - lsb-release
+        #     update-cache: true
+        #     cache_valid_time: 86400
+
+        # - name: Create Docker Key folder
+        #   file:
+        #     path: /etc/apt/keyrings
+        #     state: directory
+        #     mode: "0755"
+
+        # - name: Add Docker Key
+        #   apt_key:
+        #     url: https://download.docker.com/linux/ubuntu/gpg
+        #     keyring: /etc/apt/keyrings/docker.gpg
+        #     state: present
+
+        # - name: Install stable repositorie
+        #   apt_repository:
+        #     repo: deb [arch=arm64 signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable
+        #     update-cache: true
+        #     state: present
+        #     filename: docker
+        #   register: repositor
+
+        # - debug:
+        #     msg: "{{ansible_distribution}}"
+
+        # - name: Install Docker-ce
+        #   package:
+        #     name: '{{ item }}'
+        #     state: latest
+        #     update-cache: true
+        #   with_items:
+        #   - docker-ce
+        #   - docker-ce-cli
 
         - name: Docker is install and reboot
           service:
@@ -101,6 +150,6 @@
             state: started
             volumes:
               - ~/ngnx_files/ngnx.conf:/etc/nginx/conf.d/default.conf
-              - ~/ngnx_files/index.html:/usr/share/nginx/html/index.html
+              - /home/vagrant/ngnx_files/index.html:/usr/share/nginx/html/index.html
             ports:
               - 8081:80
