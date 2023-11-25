@@ -4,3 +4,5 @@ exclude_paths:
   - collections/
 skip_list:
   - fqcn
+  - yaml[comments]
+  - var-naming[no-reserved]
