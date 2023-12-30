@@ -13,7 +13,6 @@
           - docker-ce-cli
           - containerd.io
           - docker-buildx-plugin
-          #- docker-compose-plugin
         dependencies_for_docker:
           - ca-certificates
           - curl
@@ -50,49 +49,6 @@
             name: "{{ item }}"
             state: present
           loop: "{{ when_not_install }}"
-
-        # - name: Install additional packages
-        #   apt:
-        #     name:
-        #       - apt-transport-https
-        #       - ca-certificates
-        #       - curl
-        #       - gnupg
-        #       - lsb-release
-        #     update-cache: true
-        #     cache_valid_time: 86400
-
-        # - name: Create Docker Key folder
-        #   file:
-        #     path: /etc/apt/keyrings
-        #     state: directory
-        #     mode: "0755"
-
-        # - name: Add Docker Key
-        #   apt_key:
-        #     url: https://download.docker.com/linux/ubuntu/gpg
-        #     keyring: /etc/apt/keyrings/docker.gpg
-        #     state: present
-
-        # - name: Install stable repositorie
-        #   apt_repository:
-        #     repo: deb [arch=arm64 signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable
-        #     update-cache: true
-        #     state: present
-        #     filename: docker
-        #   register: repositor
-
-        # - debug:
-        #     msg: "{{ansible_distribution}}"
-
-        # - name: Install Docker-ce
-        #   package:
-        #     name: '{{ item }}'
-        #     state: latest
-        #     update-cache: true
-        #   with_items:
-        #   - docker-ce
-        #   - docker-ce-cli
 
         - name: Docker is install and reboot
           service:
